@@ -6,7 +6,7 @@ import random
 
 EPISODES = 1
 if __name__ == "__main__":
-    number = 11
+    number = 12
     types = 4
     dimension = 20
     env = Environment(agents=number, dimension=dimension)
