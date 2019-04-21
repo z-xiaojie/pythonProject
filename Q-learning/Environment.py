@@ -3,15 +3,20 @@ import numpy as np
 import pandas as pd
 import scipy.io as sio
 import random
+import torch
+from torch import cuda
 import matplotlib.pyplot as plt
 from scipy.stats import genpareto
 
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class Environment:
     def __init__(self, agents, dimension=12):
         #self.create_channel()
         #ch_state = pd.read_csv("/home/xiaojie/PycharmProjects/spectrum/Q-learning-network/train_state.csv",header=None)
         self.data = self.create_data(dimension=dimension)
+        #self.data = np.array(self.data, dtype=float)
+        #self.data = torch.from_numpy(self.data).to(device)
         #self.data = []
         #for i in range(len(ch_state.columns)):
             #self.data.append(ch_state[ch_state.columns[i]])
@@ -140,7 +145,7 @@ class Environment:
         idle_duration = []
         for i in range(dimension):
             busy_duration.append(np.random.exponential(np.random.randint(30)+6, size=size).astype(int))
-            idle_duration.append(np.random.randint(1, high=np.random.randint(30)+6, size=size))
+            idle_duration.append(np.random.exponential(np.random.randint(30)+6, size=size).astype(int))
         CH = []
         for i in range(dimension):
             s = []

@@ -3,12 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 BATCH_SIZE = 32
-FC1_UNITS = 100
+FC1_UNITS = 200
 FC2_UNITS = 100
-FC3_UNITS = 75
-FC4_UNITS = 75
-A_UNITS = 75
-V_UNITS = 75
+A_UNITS = 50
+V_UNITS = 50
 
 
 class DDQNetwork(nn.Module):
@@ -24,11 +22,11 @@ class DDQNetwork(nn.Module):
         # layers
         self.fc1 = nn.Linear(self.state_size, FC1_UNITS)
         self.fc2 = nn.Linear(FC1_UNITS, FC2_UNITS)
-        self.fc3 = nn.Linear(FC2_UNITS, FC3_UNITS)
-        self.fc4 = nn.Linear(FC3_UNITS, FC4_UNITS)
+        #self.fc3 = nn.Linear(FC2_UNITS, FC3_UNITS)
+        #self.fc4 = nn.Linear(FC3_UNITS, FC4_UNITS)
         # action in given state advantage + value of the state
-        self.a_1 = nn.Linear(FC4_UNITS, A_UNITS)
-        self.v_1 = nn.Linear(FC4_UNITS, V_UNITS)
+        self.a_1 = nn.Linear(FC2_UNITS, A_UNITS)
+        self.v_1 = nn.Linear(FC2_UNITS, V_UNITS)
         self.a_2 = nn.Linear(A_UNITS, self.action_size)
         self.v_2 = nn.Linear(V_UNITS, 1)
 
@@ -36,8 +34,8 @@ class DDQNetwork(nn.Module):
         """Build a network that maps state -> action values."""
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
+        #x = F.relu(self.fc3(x))
+        #x = F.relu(self.fc4(x))
         # add Q(s,a) = v + a
         x = x.view(x.size(0), -1)
         a = F.relu(self.a_1(x))
@@ -61,16 +59,16 @@ class DQNetwork(nn.Module):
         # layers
         self.fc1 = nn.Linear(self.state_size, FC1_UNITS)
         self.fc2 = nn.Linear(FC1_UNITS, FC2_UNITS)
-        self.fc3 = nn.Linear(FC2_UNITS, FC3_UNITS)
-        self.fc4 = nn.Linear(FC3_UNITS, FC4_UNITS)
-        self.fc5 = nn.Linear(FC4_UNITS, self.action_size)
+        #self.fc3 = nn.Linear(FC2_UNITS, FC3_UNITS)
+        #self.fc4 = nn.Linear(FC3_UNITS, FC4_UNITS)
+        self.fc5 = nn.Linear(FC2_UNITS, self.action_size)
 
     def forward(self, state):
         """Build a network that maps state -> action values."""
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
+        #x = F.relu(self.fc3(x))
+        #x = F.relu(self.fc4(x))
         return self.fc5(x)
 
 
@@ -88,12 +86,12 @@ class LDDQNetwork(nn.Module):
         # layers
         self.fc1 = nn.Linear(self.state_size, FC1_UNITS)
         self.fc2 = nn.Linear(FC1_UNITS, FC2_UNITS)
-        self.fc3 = nn.Linear(FC2_UNITS, FC3_UNITS)
-        self.fc4 = nn.Linear(FC3_UNITS, FC4_UNITS)
-        self.lstm = nn.LSTM(input_size=FC4_UNITS, hidden_size=FC4_UNITS, num_layers=self.num_layers)
+        #self.fc3 = nn.Linear(FC2_UNITS, FC3_UNITS)
+        #self.fc4 = nn.Linear(FC3_UNITS, FC4_UNITS)
+        self.lstm = nn.LSTM(input_size=FC2_UNITS, hidden_size=FC2_UNITS, num_layers=self.num_layers)
         # action in given state advantage + value of the state
-        self.a_1 = nn.Linear(FC4_UNITS, A_UNITS)
-        self.v_1 = nn.Linear(FC4_UNITS, V_UNITS)
+        self.a_1 = nn.Linear(FC2_UNITS, A_UNITS)
+        self.v_1 = nn.Linear(FC2_UNITS, V_UNITS)
         self.a_2 = nn.Linear(A_UNITS, self.action_size)
         self.v_2 = nn.Linear(V_UNITS, 1)
 
@@ -101,8 +99,8 @@ class LDDQNetwork(nn.Module):
         """Build a network that maps state -> action values."""
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = F.relu(self.fc4(x))
+        #x = F.relu(self.fc3(x))
+        #x = F.relu(self.fc4(x))
         _out, _ = self.lstm(x.view(len(x), 1, -1))
         # add Q(s,a) = v + a
         x = x.view(_out.size(0), -1)

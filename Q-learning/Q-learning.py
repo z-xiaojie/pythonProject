@@ -3,12 +3,15 @@ from Environment import Environment
 from DQNAgent import DQNAgent
 from RandomAgent import  RandomAgent
 import random
+import torch
+import matplotlib.pyplot as plt
+
 
 EPISODES = 1
 if __name__ == "__main__":
-    number = 12
+    number = 4
     types = 4
-    dimension = 20
+    dimension = 15
     env = Environment(agents=number, dimension=dimension)
     state_size, action_size = env.get_state_action_size()
     print("state size", state_size, "action size", action_size)
@@ -34,7 +37,6 @@ if __name__ == "__main__":
         agents[2].append(RandomAgent(state_size, action_size))
         # agents apply LDDQN-learning
         agents[3].append(DQNAgent(state_size, action_size, "LDDQN", 15))
-
     env.reset_time()
     # env_state = [0 0 0 0 0 1 0 0 0 1 0]
     env_state = env.get_env_state()
@@ -81,19 +83,19 @@ if __name__ == "__main__":
         env_state = env.get_env_state()
         for agent_type in range(types):
             # take an action
+            utility_state = env.process_utility_state(actions[agent_type], env_state)
             for agent_id in range(number):
                 if agent_type == 2:
                     # handle agents randomly selection
-                    reward = round(agents[agent_type][agent_id].reward(actions[agent_type], actions[agent_type][agent_id], env_state), 3)
-                    #if agents[agent_type][agent_id].switched:
-                        #reward = 1
+                    reward = utility_state[actions[agent_type][agent_id]]#round(agents[agent_type][agent_id].reward(actions[agent_type], actions[agent_type][agent_id], env_state), 3)
+                    if agents[agent_type][agent_id].switched:
+                        reward = 0
                     agents[agent_type][agent_id].add_reward(reward)
                 else:
                     # handle DQN agents
-                    utility_state = env.process_utility_state(actions[agent_type], env_state)
                     reward = utility_state[actions[agent_type][agent_id]]
-                    #if agents[agent_type][agent_id].switched:
-                        #reward = 1
+                    if agents[agent_type][agent_id].switched:
+                        reward = 0
                     next_state_for_agent = env.process_state(actions[agent_type][agent_id], utility_state, reward)
                     agents[agent_type][agent_id].step(states[agent_type][agent_id], actions[agent_type][agent_id],
                                                        reward, next_state_for_agent, 0)
@@ -120,7 +122,8 @@ if __name__ == "__main__":
                 reward_history[agent_type].append(round(total[agent_type] / (env.time() * number), 3))
             summary_history.append(env.temp_summary(number))
             print("************************************")
-            print(summary_history, reward_history)
+            print(summary_history)
+            print(reward_history)
             print("************************************")
     env.summary()
     print("************************************")
