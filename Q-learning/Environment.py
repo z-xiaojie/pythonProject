@@ -39,8 +39,8 @@ class Environment:
                     valid += 1
             if valid > agents:
                 valid = agents
-            total += valid / agents
-        return round(total/self.t, 3)
+            total += valid
+        return round(total, 3)
 
     def summary(self):
         for col in range(self.dimension):

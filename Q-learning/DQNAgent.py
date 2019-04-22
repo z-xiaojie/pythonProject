@@ -1,9 +1,7 @@
 import numpy as np
 import random
 from collections import namedtuple, deque
-
-from model import DDQNetwork, DQNetwork, LDDQNetwork
-
+from RandomAgent import RandomAgent
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -18,10 +16,10 @@ UPDATE_EVERY = 4  # how often to update the network
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-class DQNAgent():
+class DQNAgent(RandomAgent):
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, type, seed):
+    def __init__(self, state_size, action_size, seed, local_model, target_model):
         """Initialize an Agent object.
 
         Params
@@ -30,41 +28,22 @@ class DQNAgent():
             action_size (int): dimension of each action
             seed (int): random seed
         """
-        self.state_size = state_size
-        self.action_size = action_size
-        self.seed = random.seed(seed)
+        super(DQNAgent, self).__init__(state_size, action_size)
 
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
 
         # Q-Network
-        self.type = type
-        if self.type == "DDQN":
-            self.qnetwork_local = DDQNetwork(state_size, action_size, seed, 2).to(device)
-            self.qnetwork_target = DDQNetwork(state_size, action_size, seed, 2).to(device)
-        elif self.type == "LDDQN":
-            self.qnetwork_local = LDDQNetwork(state_size, action_size, seed, 3).to(device)
-            self.qnetwork_target = LDDQNetwork(state_size, action_size, seed, 3).to(device)
-        else:
-            self.qnetwork_local = DQNetwork(state_size, action_size, seed, 2).to(device)
-            self.qnetwork_target = DQNetwork(state_size, action_size, seed, 2).to(device)
+        self.local_model = local_model.to(device)
+        self.target_model = target_model.to(device)
 
-        self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=LR)
+        self.optimizer = optim.Adam(self.local_model.parameters(), lr=LR)
 
         # Replay memory
         self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE, seed)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
-
-        #
-        self.switched = False
-
-        # Reward Information
-        self.reward_history = [0]
-
-    def add_reward(self, increment):
-        self.reward_history.append(self.reward_history[-1] + increment)
 
     def step(self, state, action, reward, next_state, done):
         # Save experience in replay memory
@@ -87,10 +66,10 @@ class DQNAgent():
             eps (float): epsilon, for epsilon-greedy action selection
         """
         state = torch.from_numpy(state).float().unsqueeze(0).to(device)
-        self.qnetwork_local.eval()
+        self.local_model.eval()
         with torch.no_grad():
-            action_values = self.qnetwork_local(state)
-        self.qnetwork_local.train()
+            action_values = self.local_model(state)
+        self.local_model.train()
 
         # Epsilon-greedy action selection
         if np.random.rand() > self.epsilon:
@@ -107,12 +86,12 @@ class DQNAgent():
         """
         states, actions, rewards, next_states, dones = experiences
         # Get max predicted Q values (for next states) from target model
-        Q_targets_next = self.qnetwork_target(next_states).detach().max(1)[0].unsqueeze(1)
+        Q_targets_next = self.target_model(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states
         Q_targets = rewards + (gamma * Q_targets_next * (1 - dones))
         # Get expected Q values from local model
         # [64,12]
-        Q_expected = self.qnetwork_local(states)
+        Q_expected = self.local_model(states)
         Q_expected = Q_expected.reshape(BATCH_SIZE, -1)
         Q_expected = Q_expected.gather(1, actions)
         # Compute loss
@@ -123,7 +102,7 @@ class DQNAgent():
         self.optimizer.step()
 
         # ------------------- update target network ------------------- #
-        self.soft_update(self.qnetwork_local, self.qnetwork_target, TAU)
+        self.soft_update(self.local_model, self.target_model, TAU)
 
         # Decay epsilon
         if self.epsilon > self.epsilon_min:

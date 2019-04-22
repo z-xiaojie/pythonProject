@@ -20,18 +20,5 @@ class RandomAgent:
     def add_reward(self, increment):
         self.reward_history.append(self.reward_history[-1] + increment)
 
-    def act(self):
-        if np.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
-
-    def reward(self, actions, selected_action, state):
-        if state[selected_action] == 1:
-            return 0
-        else:
-            selected = 0
-            for i in range(len(actions)):
-                if actions[i] == selected_action:
-                    selected += 1
-            return 1.0 / selected
 
 
