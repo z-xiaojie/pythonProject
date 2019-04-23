@@ -5,8 +5,9 @@ from RandomAgent import RandomAgent
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.autograd import Variable
 
-BUFFER_SIZE = int(1e6)  # replay buffer size
+BUFFER_SIZE = int(5000)  # replay buffer size
 BATCH_SIZE = 32  # minibatch size
 GAMMA = 0.95  # discount factor
 TAU = 1e-3  # for soft update of target parameters
@@ -19,7 +20,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class DQNAgent(RandomAgent):
     """Interacts with and learns from the environment."""
 
-    def __init__(self, state_size, action_size, seed, local_model, target_model):
+    def __init__(self, a_type, state_size, action_size, seed, local_model, target_model):
         """Initialize an Agent object.
 
         Params
@@ -28,7 +29,7 @@ class DQNAgent(RandomAgent):
             action_size (int): dimension of each action
             seed (int): random seed
         """
-        super(DQNAgent, self).__init__(state_size, action_size)
+        super(DQNAgent, self).__init__(a_type, state_size, action_size)
 
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
@@ -85,6 +86,10 @@ class DQNAgent(RandomAgent):
             gamma (float): discount factor
         """
         states, actions, rewards, next_states, dones = experiences
+
+        if self.a_type == "DDQN":
+            states = Variable(states)
+
         # Get max predicted Q values (for next states) from target model
         Q_targets_next = self.target_model(next_states).detach().max(1)[0].unsqueeze(1)
         # Compute Q targets for current states

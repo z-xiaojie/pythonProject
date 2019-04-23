@@ -8,11 +8,12 @@ from keras.optimizers import Adam
 
 
 class RandomAgent:
-    def __init__(self, state_size, action_size):
+    def __init__(self, a_type, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-
-        #
+        self.a_type = a_type
+        # cost for action
+        self.migration_overhead = 0
         self.switched = False
         # information for the game
         self.reward_history = [0]

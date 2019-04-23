@@ -8,18 +8,18 @@ from RandomAgent import RandomAgent
 
 INIT_PARAM = {
     "SEED": 15,
-    "NUM_LAYERS": 2,
+    "NUM_LAYERS": 1,
     "BATCH_SIZE": 32,
-    "FC1_UNITS": 100,
-    "FC2_UNITS": 100,
-    "A_UNITS": 10,
-    "V_UNITS": 10
+    "FC1_UNITS": 200,
+    "FC2_UNITS": 200,
+    "A_UNITS": 50,
+    "V_UNITS": 50
 }
 
 
 def agent_create(state_size, action_size, a_type):
     if a_type == "RANDOM":
-        return RandomAgent(state_size, action_size)
+        return RandomAgent(a_type, state_size, action_size)
     else:
         if a_type == "DQN":
             local_dqn = DQNetwork(state_size, action_size, INIT_PARAM)
@@ -29,5 +29,5 @@ def agent_create(state_size, action_size, a_type):
             target_dqn = DDQNetwork(state_size, action_size, INIT_PARAM)
         else:
             return "ERROR"
-        return DQNAgent(state_size, action_size, INIT_PARAM["SEED"], local_dqn, target_dqn)
+        return DQNAgent(a_type, state_size, action_size, INIT_PARAM["SEED"], local_dqn, target_dqn)
     return "ERROR"
