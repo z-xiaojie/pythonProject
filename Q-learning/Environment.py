@@ -8,7 +8,7 @@ from torch import cuda
 import matplotlib.pyplot as plt
 from scipy.stats import genpareto
 
-#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 class Environment:
@@ -37,7 +37,9 @@ class Environment:
             self.data[i] = self.data[i][:self.t_max]
         self.number_of_agent = agents
 
-        self.QoS = np.zeros(self.dimension)
+        self.data = torch.from_numpy(np.array(self.data)).float().to(device)
+
+        self.QoS = torch.zeros(self.dimension).float().to(device)
         if service == "same":
             for i in range(self.dimension):
                 self.QoS[i] = 1
@@ -55,12 +57,13 @@ class Environment:
             if valid > agents:
                 valid = agents
             total += valid
-        return round(total, 3)
+        return total.round()
 
     def summary(self):
         for col in range(self.dimension):
-            valid = self.t_max - np.sum(self.data[col][:self.t_max])
-            print("resource=", col, "valid=", valid, str(round(100*valid/self.t_max, 4))+"%")
+            valid = self.t_max - self.data[col][:self.t_max].sum()
+            valid = 100*valid/self.t_max
+            print("resource=", col, "valid=", valid, "%")
         print("duration", self.t_max)
         print("QoS", self.QoS)
 
@@ -71,19 +74,19 @@ class Environment:
         return np.reshape(next_state, [1, self.state_size]).astype(float)
 
     def process_utility_state(self, agents, actions, env_state):
-        utility_state = []
+        utility_state = torch.zeros(len(env_state))
         for i in range(len(env_state)):
             if env_state[i] == 1:
-                utility_state.append(0)
+                utility_state[i] = 0
             else:
                 selected_i = 0
                 for j in range(len(actions)):
                     if actions[j] == i and agents[j].migration_overhead == 0:
                         selected_i += 1
                 if selected_i > 0:
-                    utility_state.append(round(self.QoS[i] / selected_i, 3))
+                    utility_state[i] = (self.QoS[i] / selected_i)
                 else:
-                    utility_state.append(self.QoS[i])
+                    utility_state[i] = self.QoS[i]
         return utility_state
 
     def add_time(self, increment):

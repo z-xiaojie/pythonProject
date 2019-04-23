@@ -6,6 +6,7 @@ import time
 import torch
 import matplotlib.pyplot as plt
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 EPISODES = 1
 if __name__ == "__main__":
@@ -139,7 +140,7 @@ if __name__ == "__main__":
             summary = []
             for agent_type in range(types):
                 ratio = total[agent_type] / current_optimal
-                summary.append(round(ratio, 3))
+                summary.append(ratio)
             print(env.time(), "MAX(", current_optimal, ")[", summary[0], summary[1], summary[2], "]",
                   "Q=[", int(total[0]), actions[0], np.sum(cost_of_actions[0]), "]",
                   "D=[", int(total[1]), actions[1], np.sum(cost_of_actions[1]), "]",
@@ -148,7 +149,7 @@ if __name__ == "__main__":
             if env.time() % 2000 == 0:
                 for agent_type in range(types):
                     reward_history[agent_type].append(summary[agent_type])
-                summary_history.append( round(current_optimal/ ( env.time() * number), 3))
+                summary_history.append(current_optimal/ ( env.time() * number) )
                 print("************************************")
                 print(time_action, time_reward)
                 print(summary_history)
