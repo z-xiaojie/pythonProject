@@ -3,8 +3,7 @@ from itertools import combinations_with_replacement
 import random
 import copy
 from itertools import product
-from knapsack_prob import opt
-import time
+from Task.knapsack_prob import opt
 import math
 
 time_for_one_task = None

@@ -1,10 +1,5 @@
 import numpy as np
-import random
-from User import User
-from EdgeCloud import EdgeCloud
-from URB import URB
-import matplotlib.pyplot as plt
-from Prediction import assign_channel_to_edge
+from Task.EdgeCloud import EdgeCloud
 
 """
 network_param = {

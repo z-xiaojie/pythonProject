@@ -1,9 +1,7 @@
 import random
-import copy
 import numpy as np
-import Optimization
+from Task import Optimization
 import copy
-import time
 
 
 # Class to represent chromosome

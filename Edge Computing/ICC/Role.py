@@ -1,4 +1,4 @@
-from EdgeCloud import EdgeCloud
+from Task.EdgeCloud import EdgeCloud
 from Device import Device
 import random
 import math

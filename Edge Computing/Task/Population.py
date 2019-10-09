@@ -1,7 +1,5 @@
-from Chromosome import Chromosome
+from Task.Chromosome import Chromosome
 from collections import namedtuple
-import Optimization
-import time
 import copy
 
 

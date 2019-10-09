@@ -1,11 +1,7 @@
-import matplotlib.pyplot as plt
 import numpy as np
-from itertools import product
-from Optimization import optimal_partition, global_optimization, local_optimization
-from Check import check_job_fail_summary
-from Assignment_Map import AssignmentMemory
+from Task.Optimization import global_optimization, local_optimization
+from Task.Assignment_Map import AssignmentMemory
 import time
-import math
 
 
 def compare(run, alpha, marker, label, evn, edge, users, number_of_edge, number_of_user, change=0, verbose=1,

@@ -1,7 +1,6 @@
-from Node import Node
-from Job import Job
-from Check import condition_one, condition_two, total_utility_density
-from Core import Core
+from Task.Node import Node
+from Task.Check import condition_one, condition_two
+from Task.Core import Core
 
 
 class EdgeCloud(Node):

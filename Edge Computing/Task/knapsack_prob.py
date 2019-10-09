@@ -1,13 +1,8 @@
-from Population import Population
-from Chromosome import  Chromosome
-import Optimization
-from genetic_toolkit import BiologicalProcessManager
+from Task.Population import Population
+from Task.genetic_toolkit import BiologicalProcessManager
 import random
-import time
-from matplotlib import pyplot as plt
 import numpy as np
-import Optimization
-import copy
+from Task import Optimization
 
 
 def find_the_best(pre_feasible, pre_partition, population, edge, users, number_of_user, number_of_edge):
@@ -15,7 +10,7 @@ def find_the_best(pre_feasible, pre_partition, population, edge, users, number_o
 	# if previous partition is feasible, do  migrate only when new assignment has a positive fitness and is also feasible
 	for i in range(len(population)):
 		feasible = Optimization.feasible(edge, users, number_of_user, number_of_edge,
-																population[i].genotype_representation)
+                                         population[i].genotype_representation)
 		if pre_feasible:
 			if population[i].fitness > 0 and feasible:
 				return feasible, population[i]

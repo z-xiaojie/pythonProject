@@ -1,5 +1,5 @@
 import random
-from Chromosome import Chromosome
+from Task.Chromosome import Chromosome
 
 
 # Class to represent biological processes

@@ -1,8 +1,5 @@
-import numpy as np
-from Chromosome import Chromosome
-import math
-import random
-import Optimization
+from Task.Chromosome import Chromosome
+from Task import Optimization
 
 
 class Assignment:

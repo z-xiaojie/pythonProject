@@ -1,10 +1,5 @@
-import matplotlib.pyplot as plt
-from Main import Main
-import random
 import numpy as np
-from History import History
-from itertools import combinations_with_replacement
-from itertools import product
+from Task.History import History
 
 
 def update_history_partition_set(edge, users, number_of_user, number_of_edge, partition_history):

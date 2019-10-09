@@ -1,13 +1,11 @@
-import random
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from Compare import compare
-from Main import create_edge
+from Task.Compare import compare
+from Task.Main import create_edge
 from User import User
 import copy
-from Optimization import set_unit_migration_overhead
-from Prediction import assign_channel_to_edge
+from Task.Optimization import set_unit_migration_overhead
+from Task.Prediction import assign_channel_to_edge
 
 
 ########################

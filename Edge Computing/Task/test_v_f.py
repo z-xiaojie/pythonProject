@@ -2,11 +2,11 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from Compare import compare
-from Main import create_edge
+from Task.Compare import compare
+from Task.Main import create_edge
 from User import User
 import copy
-from Optimization import set_unit_migration_overhead
+from Task.Optimization import set_unit_migration_overhead
 
 ########################
 #   create users
@@ -51,8 +51,8 @@ tf = 10
 rf = 10
 t = a * 10 + (1-a)*10
 """
-alpha =  [0, 0.1 , 0.2, 0.3,0.4, 0.5, 0.6, 0.7 ,0.8, 0.9, 1]
-change = [1, 1, 1 , 1  , 1  ,  1, 1,  1,1,1,1,1,1,1]
+alpha = [0.3, 0.5, 0.7, 0.8, 0.9,  1 ,  1, 1]
+change = [1, 1, 1, 1, 1, 1,  0, -1]
 marker = ["+", "1", "2", "3", "4", "+", "x", "|", "*"]
 
 start_time = int(80000 * 1.8)
@@ -72,6 +72,7 @@ for i in range(2):
     avg_tf = np.zeros(len(alpha))
     migration_overhead = np.zeros(len(alpha))
     complete = np.zeros(len(alpha))
+    jobs = np.zeros(len(alpha))
     while run > 0:
         users = create_users(number_of_user, cur_time=start_time)
         set_unit_migration_overhead(random.uniform(test[i][0], test[i][1]))
@@ -84,8 +85,8 @@ for i in range(2):
             edge = create_edge(evn, number_of_edge=number_of_edge, time_interval=int(30),
                                channel=[11, 34, 17, 18, 19, 20, 11, 12, 34, 16],
                                number_of_core=2,
-                               bandwidth_max=30)
-            tf, rf, cp, _, _, _, _= \
+                               bandwidth_max=25)
+            tf, rf, cp, _, _, _, nj = \
                 compare(run, alpha[k], None, label, evn, edge, this_user, number_of_edge=number_of_edge,
                         number_of_user=number_of_user, change=change[k], verbose=1,
                         time_interval=int(30), system_interval=30, start_time=start_time,
@@ -93,22 +94,26 @@ for i in range(2):
             migration_overhead[k] += rf
             avg_tf[k] += tf * 1000
             complete[k] += cp * 100
+            jobs[k] += nj
             print("run", run, "finish", alpha[k])
         run = run - 1
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>")
         print("run", run)
-        print("a4=", list(migration_overhead))
-        print("a4=", list(avg_tf))
-        print("a4=", list(complete))
+        print("a=", list(migration_overhead))
+        print("b=", list(avg_tf))
+        print("c=", list(complete))
+        print("d=", list(jobs))
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>")
     for k in range(len(alpha)):
         migration_overhead[k] = migration_overhead[k] / number_of_run
         avg_tf[k] = avg_tf[k] / number_of_run
         complete[k] = complete[k] / number_of_run
+        jobs[k] = jobs[k] / number_of_run
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>")
-    print("a4=",list(migration_overhead))
-    print("a4=",list(avg_tf))
-    print("a4=",list(complete))
+    print("a=",list(migration_overhead))
+    print("b=",list(avg_tf))
+    print("c=",list(complete))
+    print("d=", list(jobs))
     print(">>>>>>>>>>>>>>>>>>>>>>>>>>")
 
     """"
@@ -127,6 +132,8 @@ for i in range(2):
     plt.subplot(223)
     plt.plot(alpha, complete, marker="+")
 
+    plt.subplot(224)
+    plt.plot(alpha, jobs, marker="+")
 
 
 """
@@ -152,6 +159,12 @@ plt.grid(True)
 plt.subplot(223)
 plt.xlabel("alpha")
 plt.ylabel("Job Success [%]")
+plt.legend()
+plt.grid(True)
+
+plt.subplot(224)
+plt.xlabel("alpha")
+plt.ylabel("Number of Success Job")
 plt.legend()
 plt.grid(True)
 

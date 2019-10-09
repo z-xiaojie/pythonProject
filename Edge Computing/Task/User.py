@@ -1,5 +1,5 @@
-from Job import Job
-from Node import Node
+from Task.Job import Job
+from Task.Node import Node
 import numpy as np
 
 
