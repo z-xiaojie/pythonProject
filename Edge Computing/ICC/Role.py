@@ -1,4 +1,4 @@
-from Task.EdgeCloud import EdgeCloud
+from EdgeCloud import EdgeCloud
 from Device import Device
 import random
 import math
@@ -18,8 +18,7 @@ class Role:
         self.number_of_edge = number_of_edge
         self.edges = []
         for k in range(self.number_of_edge):
-            self.edges.append(EdgeCloud(k, cpu[k], k + 1,  transmission_power=random.uniform(0.5, 1),
-                                        bandwidth=network[k]))
+            self.edges.append(EdgeCloud(k, cpu[k], k + 1,  transmission_power=random.uniform(0.5, 1), bandwidth=network[k]))
 
         self.network = network
 

@@ -111,7 +111,6 @@ class Device:
             dd.append(directive)
             tt.append(t)
             # print(it, "directive", directive, "t", t)
-
             """
             if math.fabs(directive) <= 0.0005:
                 # minimal energy
@@ -133,9 +132,8 @@ class Device:
                 #      "directive", directive)
                 break
             """
-
             t = t + TM * epsilon
-            # t = t - epsilon * directive
+            # t = t - 0.1 * directive
             it = it + 1
 
         if config is None:
@@ -209,7 +207,7 @@ class Device:
         #print("????", "user", self.task_id, "diff", diff, self.remote / f_e, t
         #      , "data", t * self.rate(power, bw, edge_id), self.local_to_remote_size
         #      , "time", self.local_to_remote_size / self.rate(power, bw, edge_id))
-        print(self.task_id, self.local / cpu, cpu/math.pow(10, 9), self.local/math.pow(10, 9), computation_time)
+        # print(self.task_id, self.local / cpu, cpu/math.pow(10, 9), self.local/math.pow(10, 9), computation_time)
         # minimal energy
         a = self.k * self.local * math.pow(cpu, 2)
         energy = a + t * power * math.ceil(bw/math.pow(10, 6))

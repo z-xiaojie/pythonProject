@@ -131,6 +131,16 @@ class EdgeCloud:
                 item.local_finished = True
                 item.local_finished_time = local_finished_time
 
+    def get_freq(self, n):
+        """
+        number_of_users = len(self.tasks)
+        for item in self.tasks:
+            if item.task_id == n:
+                return self.freq / number_of_users
+        return self.freq / (number_of_users + 1)
+        """
+        return self.freq
+
     def get_bandwidth(self, n):
         number_of_users = len(self.tasks)
         for item in self.tasks:
