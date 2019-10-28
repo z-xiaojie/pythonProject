@@ -13,7 +13,7 @@ class Role:
         self.number_of_user = number_of_user
         self.users = []
         for n in range(self.number_of_user):
-            self.users.append(Device(d_cpu[n], n, H[n], transmission_power=random.uniform(0.5, 1), epsilon = epsilon))
+            self.users.append(Device(d_cpu[n], n, H[n], transmission_power=random.uniform(0.5, 1), epsilon=epsilon))
 
         self.number_of_edge = number_of_edge
         self.edges = []
@@ -47,9 +47,9 @@ class Role:
             T.append(self.users[n].DAG.T)
             D.append(self.users[n].DAG.D)
         print(job_list)
-        #print(cpu)
-        #print(T)
-        #print(D)
+        print(cpu)
+        print(T)
+        print(D)
 
     def create_partition_map(self, alpha):
         partition = []

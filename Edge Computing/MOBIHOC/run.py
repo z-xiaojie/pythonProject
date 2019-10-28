@@ -77,7 +77,7 @@ def get_request(model, just_updated, player, selection, full, epsilon):
             continue
         validation = []
         for k in range(player.number_of_edge):
-            config = player.users[n].select_partition(full, player.edges[k], epsilon=epsilon, p_adjust=0.3, default_channel=3)
+            config = player.users[n].select_partition(full, player.edges[k], epsilon=epsilon, p_adjust=0.5, default_channel=3)
             if config is not None:
                 validation.append({
                     "edge": k,

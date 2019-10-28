@@ -17,24 +17,27 @@ for i in range(iterations):
     # 3, 40， 85
     # 3, 35,  101
     # 3, 30,  85, 87, 72
-    number_of_user, number_of_edge, epsilon = 15, 3, 0.01
-    chs = 15
+    number_of_user, number_of_edge, epsilon = 1, 3, 0.03
+    chs = 20
     t = 0
     f = 1.25
+
+    number_of_chs = np.array([random.randint(chs, chs) for x in range(number_of_edge)])
+    cpu = np.array([random.uniform(4.5, 7.5) * math.pow(10, 9) for x in range(number_of_edge)])
+    H = [[np.random.rayleigh(np.sqrt(2 / np.pi) * math.pow(10, -3)) for y in range(number_of_edge)] for x in
+         range(number_of_user)]
+    d_cpu = np.array([random.uniform(1.5, 2.5) * math.pow(10, 9) for x in range(number_of_user)])
+    player = Role(number_of_edge=number_of_edge, number_of_user=number_of_user, epsilon=epsilon,
+                  number_of_chs=number_of_chs, cpu=cpu, d_cpu=d_cpu, H=H)
+    player.initial_DAG()
+
     while t < I:
-        number_of_chs = np.array([random.randint(15, 30) for x in range(number_of_edge)])
-        cpu = np.array([random.uniform(4.5, 7.5) * math.pow(10, 9) for x in range(number_of_edge)])
-        H = [[np.random.rayleigh(np.sqrt(2 / np.pi) * math.pow(10, -3)) for y in range(number_of_edge)] for x in
-             range(number_of_user)]
-        d_cpu = np.array([random.uniform(1.5, 2.5) * math.pow(10, 9) for x in range(number_of_user)])
-        player = Role(number_of_edge=number_of_edge, number_of_user=number_of_user, epsilon=epsilon, number_of_chs=number_of_chs, cpu=cpu,
-                      d_cpu=d_cpu,
-                      H=H)
-        player.initial_DAG()
+        number_of_chs = np.array([random.randint(chs, chs) for x in range(number_of_edge)])
+        for k in range(number_of_edge):
+            player.edges[k].number_of_chs = number_of_chs[k]
         it, finish_hist1, bandwidth1, opt_delta1, selection1, finished, energy, local, improvement \
             = test(1, False, model=1, epsilon=epsilon, number_of_user=number_of_user, number_of_edge=number_of_edge
                                      ,player=copy.deepcopy(player))
-
         if finished != 1:
             print(">>>>>>>", np.sum(finished))
             # continue
@@ -70,8 +73,8 @@ for i in range(iterations):
 
         #plt.subplot(2, 2, 4)
         #plt.plot(finish_hist2)
-        # chs += 5
-        f += 0.5
+        chs += 10
+        # f += 0.5
         # number_of_user += 3
         t += 1
 

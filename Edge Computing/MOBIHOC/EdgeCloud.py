@@ -23,6 +23,7 @@ class EdgeCloud:
         self.f_n_k = None
         self.t_n = None
         self.history = None
+        self.d_n_min = None
 
     def accept(self, task):
         for n in range(self.number_of_user):
@@ -53,6 +54,21 @@ class EdgeCloud:
         self.chs = [default_channel for n in range(self.number_of_user)]
         return allocation
 
+    def get_min_d_n(self):
+        for n in range(self.number_of_user):
+            w = (self.tasks[n].local_to_remote_size * math.log(2) / (self.W * self.tasks[n].DAG.D/100)) - 1
+            d = 0.000005
+            x = d * math.pow(self.tasks[n].H[self.id], 2) / (self.get_ch_number(n) * self.N_0 * np.exp(1)) - 1 / np.exp(
+                1)
+            current = lambertw(x, 0)
+            while current.real < w:
+                d = d + 0.000005
+                x = d * math.pow(self.tasks[n].H[self.id], 2) / (self.get_ch_number(n) * self.N_0 * np.exp(1)) - 1 / np.exp(1)
+                current = lambertw(x, 0)
+                # print(d, current.real, w)
+            self.d_n_min[n] = d
+        # print("min d_n", self.d_n_min)
+
     def get_optimal_transmission_time(self, n):
         Z = self.tasks[n].local_to_remote_size
         a = math.log(2) * Z
@@ -79,7 +95,6 @@ class EdgeCloud:
             if diff <= 0:
                 finished += 1
             max_d_n = math.pow(self.tasks[n].freq, 3) * 2 * self.k
-
             """
             r_max = self.W * self.get_ch_number(n) * math.log2(
                 1 + (self.tasks[n].p_max / self.get_ch_number(n)) * math.pow(self.tasks[n].H[self.id], 2) / self.N_0)
@@ -91,17 +106,18 @@ class EdgeCloud:
                 max_server_compuation_time = self.tasks[n].DAG.D / 1000 - Z / r_max
                 min_d_n = math.pow(self.tasks[n].remote / max_server_compuation_time, 2)/(math.pow(self.freq, 2) * self.tasks[n].remote)
             """
-            #if diff < 0 and min(max(0, self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n) == 0:
-            #    self.d_n[n] = self.d_n[n] / 2
-                # print(">>>>>>>>>>>>>>>>>>>>>>")
-            #else:
-            self.d_n[n] = min(max(0, self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n)
+            if diff < 0 and min(max(self.d_n_min[n], self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n) == 0:
+                self.d_n[n] = self.d_n[n] / 1.1
+                #print(">>>>>>>>>>>>>>>>>>>>>>")
+            else:
+                self.d_n[n] = min(max(self.d_n_min[n], self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n)
+            #self.d_n[n] = min(max(self.d_n_min[n], self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n)
             diff_.append(round(diff, 6))
             if math.fabs(diff) > epsilon:
                 stop = False
             # if self.d_n[n] == 0:
-        if t > 15000:
-            print(t, self.d_n, self.l_n, diff_)
+        # if t > 15998:
+            # print(t, self.d_n, self.l_n, diff_)
         return stop, diff_
 
     def new_value(self):
@@ -111,12 +127,12 @@ class EdgeCloud:
         if sum_weight == 0:
             print(">>>>>>>>>", self.tasks[n].remote/math.pow(10, 9), self.tasks[n].local/math.pow(10, 9), self.d_n[n])
         for n in range(self.number_of_user):
-            self.f_n[n] = (self.d_n[n] / (2 * self.k)) ** (1. / 3)
+            self.f_n[n] = min((self.d_n[n] / (2 * self.k)) ** (1. / 3), self.tasks[n].freq)
             self.f_n_k[n] = self.freq * math.sqrt(self.tasks[n].remote * self.d_n[n]) / sum_weight
             Z = self.tasks[n].local_to_remote_size
             self.t_n[n] = self.get_optimal_transmission_time(n)
-            self.p_n[n] = self.N_0 * (math.pow(2, Z / (self.t_n[n] * self.get_ch_number(n) * self.W)) - 1) / math.pow(
-                self.tasks[n].H[self.id], 2)
+            self.p_n[n] = min(self.N_0 * (math.pow(2, Z / (self.t_n[n] * self.get_ch_number(n) * self.W)) - 1) / math.pow(
+                self.tasks[n].H[self.id], 2), self.tasks[n].p_max/self.get_ch_number(n))
 
     def assign_ch(self, default_channel):
         allocation = self.set_initial_sub_channel(default_channel)
@@ -165,7 +181,8 @@ class EdgeCloud:
             "configs": []
         }
         for n in range(self.number_of_user):
-            temp["configs"].append([round(energy_vector[n], 5), self.f_n_k[n], self.get_ch_number(n), self.tasks[n].task_id])
+            temp["configs"].append([round(energy_vector[n], 5), self.f_n_k[n], self.get_ch_number(n), self.tasks[n].task_id
+                                   , self.f_n[n], self.p_n[n]])
         self.history.append(temp)
 
     def update_resource_allocation(self, delta):
@@ -176,6 +193,8 @@ class EdgeCloud:
                         if config[3] == self.tasks[n].task_id:
                             self.tasks[n].config[3] = config[1]
                             self.tasks[n].config[4] = config[2]
+                            self.tasks[n].config[1] = config[4]
+                            self.tasks[n].config[2] = config[5]
                             break
 
     def restore_partition(self):
@@ -187,9 +206,11 @@ class EdgeCloud:
         exist, index = self.accept(who)
         # 初始化 sub-channel
         self.set_initial_sub_channel(default_channel)
+        self.d_n_min = np.zeros(self.number_of_user)
+        self.get_min_d_n()
         # 初始化参数
-        self.f_n = np.array([self.tasks[n].freq/2 for n in range(self.number_of_user)])
-        self.p_n = np.array([0.3 * self.tasks[n].p_max / self.get_ch_number(n) for n in range(self.number_of_user)])
+        self.f_n = np.array([self.tasks[n].freq/5 for n in range(self.number_of_user)])
+        self.p_n = np.array([0.2 * self.tasks[n].p_max / self.get_ch_number(n) for n in range(self.number_of_user)])
         self.d_n = np.array([(math.pow(self.tasks[n].freq, 3) * 2 * self.k) ** (1. / 3) for n in range(self.number_of_user)])
         self.l_n = [0 for n in range(self.number_of_user)]
         sum_weight = 0
@@ -207,10 +228,10 @@ class EdgeCloud:
         step = 0.000001
         while True:
             stop1, diff_ = self.update_multiplier(t, 1, epsilon=epsilon, step=step)
-            if stop1 or t > 40000:
+            if stop1 or t > 25000:
                 break
             self.new_value()
-            if t % 200 == 0:
+            if t % 50 == 0:
                 self.assign_ch(default_channel)
             # if t % 20 == 0:
             #    energy_vector, finish_time = self.calculate_energy()

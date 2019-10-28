@@ -11,7 +11,8 @@ def test(x, full, model=0, epsilon=0.001, number_of_user=5, number_of_edge=1, pl
 
     selection = np.zeros(number_of_user).astype(int) - 1
     ee_local, finished, user_hist = initial_energy_all_local(selection, player)
-
+    print("local=", finished)
+    print("total=", [item.total_computation for item in player.users])
     t = 0
     hist = []
     finish_hist = []

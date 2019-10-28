@@ -8,7 +8,7 @@ import math
 from test_case import test
 
 iterations = 1
-I = 1
+I = 6
 hist = [ [np.zeros(I) for i in range(20)] for j in range(3)]
 selection1, selection2, selection3 = None, None, None
 opt_delta1, opt_delta2 = None, None
@@ -20,20 +20,20 @@ for i in range(iterations):
     number_of_user, number_of_edge, epsilon = 15, 3, 0.005
     chs = 15
     t = 0
-    f = 1.25
+    f = 2.75
+    cpu = np.array([random.uniform(f, f) * math.pow(10, 9) for x in range(number_of_edge)])
+    H = [[np.random.rayleigh(np.sqrt(2 / np.pi) * math.pow(10, -3)) for y in range(number_of_edge)] for x in
+         range(number_of_user)]
+    d_cpu = np.array([random.uniform(1.75, 2.75) * math.pow(10, 9) for x in range(number_of_user)])
+    network = np.array([random.uniform(chs, chs) * math.pow(10, 6) for x in range(number_of_edge)])
+    player = Role(number_of_edge=number_of_edge, number_of_user=number_of_user, network=network, cpu=cpu, d_cpu=d_cpu,H=H)
+    player.initial_DAG()
     while t < I:
-        network = np.array([random.uniform(30, 50) * math.pow(10, 6) for x in range(number_of_edge)])
-        cpu = np.array([random.uniform(f, f) * math.pow(10, 9) for x in range(number_of_edge)])
-        H = [[np.random.rayleigh(np.sqrt(2 / np.pi) * math.pow(10, -3)) for y in range(number_of_edge)] for x in
-             range(number_of_user)]
-        d_cpu = np.array([random.uniform(1.75, 2.5) * math.pow(10, 9) for x in range(number_of_user)])
-        player = Role(number_of_edge=number_of_edge, number_of_user=number_of_user, network=network, cpu=cpu,
-                      d_cpu=d_cpu,
-                      H=H)
-        player.initial_DAG()
-        it, finish_hist1, bandwidth1, opt_delta1, selection1, finished, energy, local, improvement = test(1, False, model=1, epsilon=epsilon, number_of_user=number_of_user, number_of_edge=number_of_edge
-                                     ,player=copy.deepcopy(player), network=network, cpu=cpu)
-
+        network = np.array([chs * math.pow(10, 6) for x in range(number_of_edge)])
+        for k in range(number_of_edge):
+            player.edges[k].bandwidth = network[k]
+        total, it, finish_hist1, bandwidth1, opt_delta1, selection1, finished, energy, local, improvement = test(1, False, model=1, epsilon=epsilon, number_of_user=number_of_user, number_of_edge=number_of_edge
+                                      ,player=copy.deepcopy(player), network=network, cpu=cpu)
         if finished != 1:
             print(">>>>>>>", np.sum(finished))
             continue
@@ -44,10 +44,8 @@ for i in range(iterations):
         hist[0][3][t] += local
         hist[0][4][t] += it
 
-
-        it, finish_hist2, bandwidth2, opt_delta2, selection2, finished, energy, local, improvement = test(2, True, model=1, epsilon=epsilon, number_of_user=number_of_user,
-                                        number_of_edge=number_of_edge
-                                        ,player=copy.deepcopy(player), network=network, cpu=cpu)
+        _, it, finish_hist2, bandwidth2, opt_delta2, selection2, finished, energy, local, improvement = test(1, True, model=1, epsilon=epsilon, number_of_user=number_of_user,
+                                        number_of_edge=number_of_edge, player=copy.deepcopy(player), network=network, cpu=cpu)
         hist[1][0][t] += finished
         hist[1][1][t] += improvement
         hist[1][2][t] += energy
@@ -69,8 +67,8 @@ for i in range(iterations):
 
         #plt.subplot(2, 2, 4)
         #plt.plot(finish_hist2)
-        # chs += 5
-        f += 0.5
+        chs += 5
+        # f += 0.5
         # number_of_user += 3
         t += 1
 
@@ -86,7 +84,6 @@ print("adaptive=", list(hist[0][2]/iterations))
 print("full=", list(hist[1][2]/iterations))
 print("local=", list(hist[0][3]/iterations))
 print("it=", list(hist[0][4]/iterations))
-
 """
 print(selection1, "finished", hist[2][0]/iterations)
 print("average improvement", hist[2][1]/iterations, hist[2][2]/iterations, hist[2][3]/iterations)

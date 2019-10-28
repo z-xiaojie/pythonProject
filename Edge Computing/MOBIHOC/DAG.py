@@ -28,7 +28,7 @@ class JOB:
 
 class DAG:
     def __init__(self, task_id, f_local, T=None, D=None):
-        self.length = random.randint(2, 2)
+        self.length = random.randint(2, 4)
         # time interval = 50 ms
         if T is not None:
             self.T = T
@@ -105,7 +105,7 @@ class DAG:
         self.jobs = []
         output_data = int(random.randint(500, 1500)) * 8000
         density = random.randint(0, self.length - 1)
-        complexity = random.randint(25, 150)
+        complexity = random.randint(45, 100)
         low_complexity = random.randint(15, 35)
         for m in range(self.length):
             input_data = output_data

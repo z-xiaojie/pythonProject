@@ -103,10 +103,10 @@ class DAG:
 
     def create(self):
         self.jobs = []
-        output_data = int(random.randint(500, 1500)) * 8000
+        output_data = int(random.randint(500, 1300)) * 8000
         density = random.randint(0, self.length - 1)
-        complexity = random.randint(15, 120)
-        low_complexity = random.randint(15, 35)
+        complexity = random.randint(25, 150)
+        low_complexity = random.randint(15, 30)
         for m in range(self.length):
             input_data = output_data
             output_data = int(random.uniform(250, 500)) * 8000

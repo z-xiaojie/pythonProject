@@ -48,7 +48,7 @@ class Device:
         validation = []
         if full == False:
             for delta in range(len(self.DAG.jobs) - 1):
-                self.local, self.remote, data = 0, 0, self.DAG.jobs[delta].output_data
+                self.local, self.remote = 0, 0
                 for m in range(0, delta):
                     self.local += self.DAG.jobs[m].computation
                 for m in range(delta, self.DAG.length):
@@ -56,7 +56,7 @@ class Device:
                 if delta == 0:
                     self.local_to_remote_size = self.DAG.jobs[delta].input_data
                 else:
-                    self.local_to_remote_size = self.DAG.jobs[delta].output_data
+                    self.local_to_remote_size = self.DAG.jobs[delta-1].output_data
                 config = self.local_optimal_resource(delta, epsilon, edge_id, f_e, bw)
                 if config is not None and (config[1] < self.local_only_energy or not self.local_only_enabled):
                     validation.append(config)
@@ -168,11 +168,16 @@ class Device:
 
             config = [delta, energy, cpu, power, t, directive]
 
+
+
         # print(config)
         #plt.plot(tt, ee)
         #plt.plot(tt, dd)
         #plt.xlim([TS, TM])
         #plt.show()
+
+
+
         return config
         # [313.0, 61.0, 452.0, 228.0, 478.0] [0.0004, 0.2796, 0.0497, 0.4252, 0.2154]
 
@@ -194,7 +199,7 @@ class Device:
             self.local_to_remote_size = self.DAG.jobs[delta].input_data
             computation_time = 0
         else:
-            self.local_to_remote_size = self.DAG.jobs[delta].output_data
+            self.local_to_remote_size = self.DAG.jobs[delta-1].output_data
             computation_time = self.local / cpu
 
         t = self.local_to_remote_size / self.rate(power, bw, edge_id)

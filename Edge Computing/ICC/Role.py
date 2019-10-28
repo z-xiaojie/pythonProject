@@ -46,7 +46,7 @@ class Role:
             cpu.append(self.users[n].freq)
             T.append(self.users[n].DAG.T)
             D.append(self.users[n].DAG.D)
-        #print(job_list)
+        print(job_list)
         #print(cpu)
         #print(T)
         #print(D)
