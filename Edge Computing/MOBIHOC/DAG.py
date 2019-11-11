@@ -1,12 +1,5 @@
 import random
-import copy
 import math
-from Network import Link
-import matplotlib.pyplot as plt
-import numpy as np
-import json
-from collections import namedtuple
-from integrated_job import CJOB
 
 
 class JOB:
@@ -59,19 +52,6 @@ class DAG:
 
         #print("Task id=", self.task_id, ", local CPU =", f_local, ", DAG-jobs[ T=", self.T, ",D=", self.D, "]")
 
-    """
-        Base on compute resource allocation, determine edges
-        input: vector of nodes id
-    """
-    def allocate_compute(self, computes):
-        self.compute = computes
-        self.edges = []
-        self.jobs[0].resource = 1
-        for m in range(1, self.length):
-            if self.compute[m] != self.compute[m-1]:
-                self.edges.append(Link(self.compute[m-1], self.compute[m], self.jobs[m-1].output_data))
-            self.jobs[m].resource = self.compute[m]
-
     def display_edge(self):
         for link in self.edges:
             print(link)
@@ -98,22 +78,24 @@ class DAG:
         for m in range(self.length):
             pred_id = m - 1
             succ_id = m + 1
-            self.jobs.append(JOB(m+1, config[m][1], config[m][0], config[m][2]
+            self.jobs.append(JOB(m + 1, config[m][1] * math.pow(10, 9), config[m][0] * 8000, config[m][2] * 8000
                                  , self.task_id, pred_id, succ_id, None))
 
-    def create(self):
+    def create(self, freq):
         self.jobs = []
-        output_data = int(random.randint(500, 1500)) * 8000
-        density = random.randint(0, self.length - 1)
-        complexity = random.randint(45, 100)
-        low_complexity = random.randint(15, 35)
+        output_data = int(random.randint(300, 1000)) * 8000
+        # density = random.randint(0, self.length - 1)
+        # complexity = random.randint(45, 100)
+        # low_complexity = random.randint(15, 35)
         for m in range(self.length):
             input_data = output_data
-            output_data = int(random.uniform(250, 500)) * 8000
-            if m > 0:
-                computation = int(input_data * complexity)  # input_data
+            output_data = int(random.uniform(250, 750)) * 8000
+            if m <= 0:
+                # computation = int(input_data * complexity)  # input_data
+                computation = random.uniform(0.01, 0.15) * freq
             else:
-                computation = int(input_data * low_complexity)  # input_data
+                # computation = int(input_data * low_complexity)  # input_data
+                computation = random.uniform(0.10, 0.30) * freq / (self.length - 1)
             pred_id = m - 1
             succ_id = m + 1
             self.jobs.append(JOB(m+1, computation, input_data, output_data
@@ -123,6 +105,7 @@ class DAG:
             #                     , random.randint(350, 1000) * 8000
             #                     , self.task_id, pred_id, succ_id, None))
         #print(self.display())
+        self.jobs[-1].output_data = 0
 
     def display(self):
         """
@@ -140,13 +123,6 @@ class DAG:
             job_dict.append([self.jobs[m].input_data/8000, self.jobs[m].computation/math.pow(10, 9), self.jobs[m].output_data/8000])
         return job_dict
 
-    def release(self, time, delta):
-        if time % self.T == 0 and time > 0:
-            local = [self.jobs[m] for m in range(0, delta + 1)]
-            remote = [self.jobs[m] for m in range(delta + 1, self.length)]
-            self.release_id += 1
-            return CJOB(self.task_id, self.release_id, local, time, time + self.D), CJOB(self.task_id, self.release_id, remote, time, time + self.D)
-        return None, None
 
     def get_valid_partition(self):
         self.valid = [0]

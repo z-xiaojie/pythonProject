@@ -16,7 +16,7 @@ class Device:
         # local information
         self.k = math.pow(10, -28)
         self.N_0 = math.pow(10, -9)
-        self.W = 1 * math.pow(10, 6)
+        self.W = 2 * math.pow(10, 6)
 
         self.H = H
         self.preference = None
@@ -68,7 +68,7 @@ class Device:
                 else:
                     self.local_to_remote_size = self.DAG.jobs[delta - 1].output_data
                 config = edge.resource_allocation(delta, who=self, epsilon=epsilon, p_adjust=p_adjust, default_channel=default_channel)
-                if config is not None and math.fabs(config[10]) < epsilon and (config[0] < self.local_only_energy or not self.local_only_enabled):
+                if config is not None and (config[0] < self.local_only_energy or not self.local_only_enabled):
                     validation.append(config)
         else:
             delta = 0
@@ -92,14 +92,14 @@ class Device:
         if self.config is None:
             return -1, 0
 
-        f_e = self.config[3]
+        f_e = self.config[2]
         bw = self.config[4]
         cpu = self.config[1]
-        power = self.config[2]
+        power = self.config[3]
         delta = self.config[5]
         edge_id = self.config[6]
 
-        self.local, self.remote, data = 0, 0, self.DAG.jobs[delta].output_data
+        self.local, self.remote = 0, 0
         for m in range(0, delta):
             self.local += self.DAG.jobs[m].computation
         for m in range(delta, self.DAG.length):
@@ -124,8 +124,8 @@ class Device:
         if diff <= self.epsilon:
             return energy, 1, t, computation_time, self.remote/f_e
         else:
-            # print(self.task_id, ">>>>>>>>>>>>>", diff, "transmission time", t)
-            return energy, 0, t, computation_time, self.remote/f_e
+           print(self.task_id, ">>>>>", diff, "rate", self.H[edge_id], "power", power, "cpu", cpu, "fe", f_e, "chs", bw)
+           return energy, 0, t, computation_time, self.remote/f_e
 
     def local_only_execution(self):
         total_computation = 0
@@ -142,12 +142,16 @@ class Device:
         if config is not None:
             self.DAG.create_from_config(config)
         else:
-            self.DAG.create()
+            self.DAG.create(self.freq)
         self.DAG.get_valid_partition()
         self.DAG.local_only_compute_energy_time(self.freq, self.k)
 
     def partition(self):
-        delta = self.config[5]
+        if self.config is not None:
+            delta = self.config[5]
+        else:
+            delta = self.DAG.length
+
         self.local, self.remote = 0, 0
         for m in range(0, delta):
             self.local += self.DAG.jobs[m].computation
@@ -156,4 +160,4 @@ class Device:
         if delta == 0:
             self.local_to_remote_size = self.DAG.jobs[delta].input_data
         else:
-            self.local_to_remote_size = self.DAG.jobs[delta].input_data
+            self.local_to_remote_size = self.DAG.jobs[delta - 1].output_data

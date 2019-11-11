@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class EdgeCloud:
     def __init__(self, id, frequency, number_of_chs=None):
-        self.freq = int(frequency)
+        self.freq = frequency
         self.number_of_chs = number_of_chs
         self.tasks = []
         self.id = id
@@ -106,18 +106,23 @@ class EdgeCloud:
                 max_server_compuation_time = self.tasks[n].DAG.D / 1000 - Z / r_max
                 min_d_n = math.pow(self.tasks[n].remote / max_server_compuation_time, 2)/(math.pow(self.freq, 2) * self.tasks[n].remote)
             """
+            if current_time > 350:
+                self.d_n[n] = max(0, self.d_n[n] + math.sqrt(step / current_time) * diff)
+            else:
+                self.d_n[n] = max(0, self.d_n[n] + math.sqrt(0.01 * step / current_time) * diff)
+            """
             if diff < 0 and min(max(self.d_n_min[n], self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n) == 0:
                 self.d_n[n] = self.d_n[n] / 1.1
-                #print(">>>>>>>>>>>>>>>>>>>>>>")
             else:
                 self.d_n[n] = min(max(self.d_n_min[n], self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n)
+            """
             #self.d_n[n] = min(max(self.d_n_min[n], self.d_n[n] + math.sqrt(step / current_time) * diff), max_d_n)
-            diff_.append(round(diff, 6))
-            if math.fabs(diff) > epsilon:
+            diff_.append(diff)
+        for item in diff_:
+            if math.fabs(item) > epsilon:
                 stop = False
-            # if self.d_n[n] == 0:
-        # if t > 15998:
-            # print(t, self.d_n, self.l_n, diff_)
+        #if t > 1:
+            #print(t, self.d_n, self.l_n, diff_)
         return stop, diff_
 
     def new_value(self):
@@ -166,8 +171,7 @@ class EdgeCloud:
             rate = self.W * self.get_ch_number(n) * math.log2(
             1 + self.p_n[n] * math.pow(self.tasks[n].H[self.id], 2) / self.N_0)
             transmission_time = z/rate
-            e_n_k[n] = self.p_n[n] * self.get_ch_number(n) * transmission_time \
-                         + self.k * self.tasks[n].local * math.pow(self.f_n[n], 2)
+            e_n_k[n] = self.p_n[n] * self.get_ch_number(n) * transmission_time + self.k * self.tasks[n].local * math.pow(self.f_n[n], 2)
             finish_time[n] = transmission_time + self.tasks[n].local / self.f_n[n] + self.tasks[n].remote / self.f_n_k[n]\
                              - self.tasks[n].DAG.D/1000
         return e_n_k, finish_time
@@ -185,24 +189,21 @@ class EdgeCloud:
                                    , self.f_n[n], self.p_n[n]])
         self.history.append(temp)
 
-    def update_resource_allocation(self, delta):
-        for item in self.history:
-            if item["delta"] == delta:
-                for n in range(self.number_of_user):
-                    for config in item["configs"]:
-                        if config[3] == self.tasks[n].task_id:
-                            self.tasks[n].config[3] = config[1]
-                            self.tasks[n].config[4] = config[2]
-                            self.tasks[n].config[1] = config[4]
-                            self.tasks[n].config[2] = config[5]
-                            break
-
-    def restore_partition(self):
+    def update_resource_allocation(self, info):
         for n in range(self.number_of_user):
-            self.tasks[n].partition()
+            task_id = self.tasks[n].task_id
+            self.tasks[n].config[1] = info.f_n[task_id]
+            self.tasks[n].config[2] = info.f_n_k[task_id][0]
+            self.tasks[n].config[3] = info.p_n[task_id]
+            self.tasks[n].config[4] = info.get_ch_number(task_id)
+
+    def restore_partition(self, who):
+        for n in range(self.number_of_user):
+            if n != who.task_id:
+                 self.tasks[n].partition()
 
     def resource_allocation(self, delta, who=None, epsilon=0.0001, p_adjust=0.9, default_channel=3):
-        self.restore_partition()
+        self.restore_partition(who)
         exist, index = self.accept(who)
         # 初始化 sub-channel
         self.set_initial_sub_channel(default_channel)
@@ -224,16 +225,22 @@ class EdgeCloud:
         ee = []
         energy_vector = None
         finish_time = None
-        diff_ = 0
-        step = 0.000001
+        diff, pre_diff = 0, 0
+        step = 0.01 / (2 * self.number_of_chs)
+        feasible = True
         while True:
-            stop1, diff_ = self.update_multiplier(t, 1, epsilon=epsilon, step=step)
-            if stop1 or t > 25000:
+            stop1, diff = self.update_multiplier(t, 0.0015 * t, epsilon=epsilon, step=step)
+            if stop1:
                 break
+            if round(np.sum(pre_diff), 6) == round(np.sum(diff), 6) and t >= 45000:
+                feasible = False
+                break
+            else:
+                pre_diff = diff
             self.new_value()
             if t % 50 == 0:
                 self.assign_ch(default_channel)
-            # if t % 20 == 0:
+            #if t % 100 == 0:
             #    energy_vector, finish_time = self.calculate_energy()
             #    ee.append(np.sum(energy_vector))
             t = t + 1
@@ -253,6 +260,7 @@ class EdgeCloud:
             self.remove(who)
         # print("test user", who.task_id,"edge", self.id,[round(energy_vector[index], 5), round(self.f_n[index]), self.p_n[index],
         #        round(self.f_n_k[index]), self.get_ch_number(index), delta, self.id, local, remote, size, round(finish_time[index],5), t])
-        return [round(energy_vector[index], 5), round(self.f_n[index]), self.p_n[index],
-                round(self.f_n_k[index]), self.get_ch_number(index), delta, self.id, local, remote, size, round(finish_time[index],5), t]
-
+        if feasible:
+            return [round(energy_vector[index], 5), round(self.f_n[index]), self.p_n[index], round(self.f_n_k[index]),self.get_ch_number(index), delta, self.id, local, remote, size, t]
+        else:
+            return None

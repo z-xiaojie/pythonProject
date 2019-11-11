@@ -1,13 +1,13 @@
 import random
 from Role import Role
-from run import initial_energy_all_local, energy_update, update_config, get_request
+from run import initial_energy_all_local, energy_update, get_request
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
 import math
 
 
-def test(x, full, model=0, epsilon=0.001, number_of_user=5, number_of_edge=1, player=None):
+def test(x, full, channel_allocation=1, epsilon=0.001, number_of_user=5, number_of_edge=1, player=None):
 
     selection = np.zeros(number_of_user).astype(int) - 1
     ee_local, finished, user_hist = initial_energy_all_local(selection, player)
@@ -24,42 +24,27 @@ def test(x, full, model=0, epsilon=0.001, number_of_user=5, number_of_edge=1, pl
         changed = True
         just_updated = -2
         # changed_k = -1
-        request = get_request(model, just_updated, player, selection, full, epsilon=epsilon)
-        if len(request) == 0:
+        req = get_request(channel_allocation, just_updated, player, selection, full, epsilon=epsilon)
+        if req is None:
             print(">>>>>>>>>> no more request")
             changed = False
         else:
-            # randomly select one request
-            target = random.choice(request)
-            n, validation, local = target["user"], target["validation"], target["local"]
-            just_updated = n
-            print(t, round(pre_energy, 5), np.sum(finished), ">>>", n, ">>>",  validation)
-            if local:
-                player.edges[selection[n]].remove(player.users[n])
-                #update_config(full, n, player, selection[n], epsilon, selection)
-                player.users[n].config = None
-                selection[n] = -1
-            else:
-                k = validation["edge"]
-                player.users[n].config = validation["config"]
-                if selection[n] != -1 and selection[n] != k:
+            for target in req:
+                n, validation, local = target["user"], target["validation"], target["local"]
+                # just_updated = n
+                if local:
                     player.edges[selection[n]].remove(player.users[n])
-                player.edges[k].accept(player.users[n])
-                player.edges[k].update_resource_allocation(validation["config"][5])
-                selection[n] = k
-
-        if changed and model == 2:
-            for n in range(number_of_user):
-                if selection[n] != -1:
-                    f_e = player.edges[selection[n]].get_freq(n)
-                    bw = player.edges[selection[n]].get_bandwidth(n)
-                    config = player.users[n].select_partition(full, epsilon, selection[n], f_e=f_e, bw=bw)
-                    if config is None:
-                        player.users[n].config[2] = player.users[n].freq
-                        player.users[n].config[3] = player.users[n].p_max/(math.ceil(bw/math.pow(10, 6)))
-                    #    y = 1
-                    else:
-                        player.users[n].config = config
+                    player.users[n].config = None
+                    selection[n] = -1
+                else:
+                    k = validation["edge"]
+                    player.users[n].config = validation["config"]
+                    if selection[n] != -1 and selection[n] != k:
+                        player.edges[selection[n]].remove(player.users[n])
+                    if selection[n] != k:
+                        player.edges[k].accept(player.users[n])
+                    # player.edges[k].update_resource_allocation(validation["info"])
+                    selection[n] = k
 
         opt_delta = []
         for n in range(number_of_user):
@@ -68,33 +53,18 @@ def test(x, full, model=0, epsilon=0.001, number_of_user=5, number_of_edge=1, pl
             else:
                 opt_delta.append(-1)
         t += 1
-        if t % 2 == 0:
+        if t % 1 == 0:
             user_hist, energy, finished, transmission, computation, edge_computation = energy_update(player,
                                                                                                      selection,
                                                                                                      user_hist)
             finish_hist.append(np.sum(finished))
             hist.append(np.sum(energy))
-            pre_energy = np.sum(energy)
-        # print(t, np.sum(energy), selection, finished, opt_delta)
+        if changed:
+            for target in req:
+                n, validation, local = target["user"], target["validation"], target["local"]
+                print(t, round(np.sum(energy), 5), np.sum(finished), ">>>", n, ">>>", validation)
+
         if not changed:
-            ttt += 1
-        if ttt >= 3:
-            # and np.sum(finished) == player.number_of_user:
-            user_hist, energy, finished, transmission, computation, edge_computation = energy_update(player,
-                                                                                                     selection,
-                                                                                                     user_hist)
-            finish_hist.append(np.sum(finished))
-            hist.append(np.sum(energy))
-            pre_energy = np.sum(energy)
-            break
-        if t > 120:
-            # and np.sum(finished) == player.number_of_user:
-            user_hist, energy, finished, transmission, computation, edge_computation = energy_update(player,
-                                                                                                     selection,
-                                                                                                     user_hist)
-            finish_hist.append(np.sum(finished))
-            hist.append(np.sum(energy))
-            pre_energy = np.sum(energy)
             break
 
     opt_cpu = []
@@ -105,10 +75,10 @@ def test(x, full, model=0, epsilon=0.001, number_of_user=5, number_of_edge=1, pl
     for n in range(number_of_user):
         if player.users[n].config is not None:
             opt_cpu.append(round(player.users[n].config[1] / math.pow(10, 9), 4))
-            opt_power.append(round(player.users[n].config[2] * player.users[n].config[4], 4))
+            opt_power.append(round(player.users[n].config[3] * player.users[n].config[4], 4))
             opt_delta.append(player.users[n].config[5])
             bandwidth.append(player.users[n].config[4])
-            opt_e_cpu.append(round(player.users[n].config[3] / math.pow(10, 9), 4))
+            opt_e_cpu.append(round(player.users[n].config[2] / math.pow(10, 9), 4))
         else:
             opt_delta.append(-1)
             opt_power.append(0)
@@ -139,8 +109,8 @@ def test(x, full, model=0, epsilon=0.001, number_of_user=5, number_of_edge=1, pl
     # print("improvement", 1 - round(np.sum(energy), 5) / round(np.sum(ee_local), 5))
     #p rint(finished, "finished", np.sum(finished))
 
-    plt.subplot(1, 2, x)
-    plt.plot(hist, label="overall")
+    #plt.subplot(1, 2, x)
+    #plt.plot(hist, label="overall")
 
     for n in range(number_of_user):
         plt.plot(user_hist[n], label="user"+str(n+1))

@@ -1,9 +1,11 @@
 import random
-from Role import Role
+from worker import *
 import numpy as np
-import matplotlib.pyplot as plt
-import copy
+import time
 import math
+import threading
+import copy
+from concurrent.futures import ThreadPoolExecutor
 
 
 def initial_energy_all_local(selection, player):
@@ -58,58 +60,81 @@ def energy_update(player, selection, user_hist, save=True):
     return user_hist, energy, finished, transmission, computation, edge_computation
 
 
-def update_config(full, this_n, player, k, epsilon, selection):
+def get_request(channel_allocation, just_updated, player, selection, full, epsilon):
     for n in range(player.number_of_user):
-        if selection[n] == k and this_n != n:
-            f_e = player.edges[selection[n]].get_freq(n)
-            bw = player.edges[selection[n]].get_bandwidth(n)
-            config = player.users[n].select_partition(full, epsilon, selection[n], f_e=f_e, bw=bw)
-            if config is not None:
-                player.users[n].config = config
+        player.users[n].partition()
 
+    D_n = np.array([player.users[n].DAG.D/1000 for n in range(player.number_of_user)])
+    X_n = np.array([player.users[n].remote for n in range(player.number_of_user)])
+    Y_n = np.array([player.users[n].local for n in range(player.number_of_user)])
+    user_cpu = np.array([player.users[n].freq for n in range(player.number_of_user)])
+    edge_cpu = np.array([player.edges[k].freq for k in range(player.number_of_edge)])
+    number_of_chs = np.array([player.edges[k].number_of_chs for k in range(player.number_of_edge)])
+    P_max = np.array([player.users[n].p_max for n in range(player.number_of_user)])
+    B = np.array([player.users[n].local_to_remote_size for n in range(player.number_of_user)])
+    H = np.array([[player.users[n].H[k] for k in range(player.number_of_edge)] for n in range(player.number_of_user)])
 
-def get_request(model, just_updated, player, selection, full, epsilon):
-    request = []
-    not_tested = [n for n in range(player.number_of_user)]
-    while len(not_tested) > 0:
-        n = random.choice(not_tested)
-        if n == just_updated:
-            continue
-        validation = []
-        for k in range(player.number_of_edge):
-            config = player.users[n].select_partition(full, player.edges[k], epsilon=epsilon, p_adjust=0.5, default_channel=3)
-            if config is not None:
-                validation.append({
-                    "edge": k,
-                    "config": config
-                })
-        if len(validation) > 0:
-            validation.sort(key=lambda x: x["config"][0])
-            # print(n, "set config", validation[0])
-            if validation[0]["edge"] != selection[n]:
-                request.append({
-                    "user": n,
-                    "validation": validation[0],
-                    "local": False
-                })
-                return request
-            else:
-                if model != 2:
-                    if math.fabs(validation[0]["config"][0] - player.users[n].config[0]) >= player.users[n].config[0] * 0.01:
-                        request.append({
-                            "user": n,
-                            "validation": validation[0],
-                            "local": False
-                        })
-                        return request
-                    # player.users[n].config = config
+    info = {
+        "selection": selection,
+        "number_of_edge": player.number_of_edge,
+        "number_of_user": player.number_of_user,
+        "D_n": D_n,
+        "X_n": X_n,
+        "Y_n": Y_n,
+        "user_cpu": user_cpu,
+        "edge_cpu": edge_cpu,
+        "number_of_chs": number_of_chs,
+        "P_max": P_max,
+        "B": B,
+        "H": H,
+        "W": 2 * math.pow(10, 6),
+        "who": None,
+        "full": full,
+        "default_channel": 1,
+        "channel_allocation": channel_allocation,
+        "step": 0.01,
+        "interval": 10,
+        "stop_point": epsilon
+    }
+    reset_request_pool(player.number_of_user)
+    start = time.time()
+
+    copied_info = []
+    for n in range(player.number_of_user):
+        info["who"] = player.users[n]
+        copied_info.append(copy.deepcopy(info))
+
+    with ThreadPoolExecutor(max_workers=player.number_of_user) as executor:
+        executor.map(worker, copied_info)
+
+    """
+    for n in range(player.number_of_user):
+        # 为每个worker创建一个线程
+        info["who"] = player.users[n]
+        # x = threading.Thread(target=worker, args=(copy.deepcopy(info),))
+        # x.start()
+        worker(copy.deepcopy(info))
+    """
+    while not check_worker(player.number_of_user):
+        t = 0
+
+    opt_delta = []
+    for n in range(player.number_of_user):
+        if player.users[n].config is not None:
+            opt_delta.append(player.users[n].config[5])
         else:
-            if selection[n] != -1:
-                request.append({
-                    "user": n,
-                    "validation": None,
-                    "local": True
-                })
-                return request
-        not_tested.remove(n)
-    return request
+            opt_delta.append(-1)
+
+    print("request finished in >>>>>>>>>>>>>>>>", time.time() - start, selection, opt_delta)
+    not_tested = [n for n in range(player.number_of_user)]
+    n = 0
+    while len(not_tested) > 0:
+        # n = random.choice(not_tested)
+        #if n == just_updated:
+            #continue
+        if get_request_pool()[n] is not None:
+            return get_requests(get_request_pool()[n], selection)
+        else:
+            not_tested.remove(n)
+            n += 1
+    return None
